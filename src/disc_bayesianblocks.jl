@@ -12,7 +12,7 @@
 
 struct DiscretizeBayesianBlocks <: DiscretizationAlgorithm
 end
-function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{N}) where {N<:AbstractFloat}
+function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{M}) where {N<:AbstractFloat, M<:AbstractFloat}
 	unique_data = unique(data)
     unique_weights = [sum(weights[data .== x]) for x in unique_data]
 	unique_weights = unique_weights[sortperm(unique_data)]
