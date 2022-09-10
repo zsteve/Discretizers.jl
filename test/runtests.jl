@@ -26,7 +26,6 @@ function array_matches(arr::AbstractVector{S}, arr2::AbstractVector{T}, abs_tole
     return true
 end
 
-
 include("test_categorical_discretizer.jl")
 include("test_linear_discretizer.jl")
 include("test_hybrid_discretizer.jl")

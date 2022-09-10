@@ -12,11 +12,11 @@
 
 struct DiscretizeBayesianBlocks <: DiscretizationAlgorithm
 end
-
-function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {N<:AbstractFloat}
-
+function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{N}) where {N<:AbstractFloat}
 	unique_data = unique(data)
-	unique_data = sort(unique_data)
+    unique_weights = [sum(weights[data .== x]) for x in unique_data]
+	unique_weights = unique_weights[sortperm(unique_data)]
+	sort!(unique_data)
 
 	n = length(unique_data) # Number of observations
 
@@ -28,11 +28,12 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {
 	edges[end] = unique_data[end]
 	block_length = unique_data[end] .- edges
 
-	if length(unique_data) == length(data)
-		nn_vec = ones(length(data))
-	else
-		nn_vec = convert(Array{Float64}, [length(findall((in)(v), data)) for v in unique_data])
-	end
+    # nn_vec seems basically to be weight vector
+	# if length(unique_data) == length(data)
+	# 	nn_vec = ones(length(data))
+	# else
+	# 	nn_vec = convert(Array{Float64}, [length(findall((in)(v), data)) for v in unique_data])
+	# end
 
 	count_vec = zeros(n)
 	best = zeros(n)
@@ -40,7 +41,7 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {
 
 	for K in 1 : n
 		widths = block_length[1:K] .- block_length[K+1]
-		count_vec[1 : K] .+= nn_vec[K]
+		count_vec[1 : K] .+= unique_weights[K]
 
 		# Fitness function (eq. 19 from Scargle 2012)
 		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths)
@@ -68,7 +69,17 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {
 	edges[change_points]
 
 end
-function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {N<:Integer}
+
+function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{M}) where {N<:Integer, M <: AbstractFloat}
 	data = convert(Array{Float64}, data)
 	return binedges(alg, data)
 end
+
+function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {N<:AbstractFloat}
+    binedges(alg, data, one.(data))
+end
+
+function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}) where {N<:Integer}
+    binedges(alg, data, convert(Array{Float64}, one.(data)))
+end
+
