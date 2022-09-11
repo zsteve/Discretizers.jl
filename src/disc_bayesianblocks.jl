@@ -11,6 +11,7 @@
 # Python implementation: https://github.com/astroML/astroML/blob/master/astroML/density_estimation/bayesian_blocks.py
 
 struct DiscretizeBayesianBlocks <: DiscretizationAlgorithm
+    p0::AbstractFloat
 end
 function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{M}) where {N<:AbstractFloat, M<:AbstractFloat}
 	unique_data = unique(data)
@@ -46,7 +47,7 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights
 		# Fitness function (eq. 19 from Scargle 2012)
 		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths)
 		# Prior (eq. 21 from Scargle 2012)
-		fit_vec .-= 4 - log(73.53 * 0.05 * ((K)^-0.478))
+		fit_vec .-= 4 - log(73.53 * alg.p0 * ((K)^-0.478))
 		fit_vec[2:end] += best[1 : K-1]
 
 		i_max = argmax(fit_vec)
