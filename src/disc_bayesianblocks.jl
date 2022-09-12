@@ -12,6 +12,7 @@
 
 struct DiscretizeBayesianBlocks <: DiscretizationAlgorithm
     p0::AbstractFloat
+    μ::AbstractFloat
 end
 function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{M}) where {N<:AbstractFloat, M<:AbstractFloat}
 	unique_data = unique(data)
@@ -45,7 +46,7 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights
 		count_vec[1 : K] .+= unique_weights[K]
 
 		# Fitness function (eq. 19 from Scargle 2012)
-		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths)
+		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths) - alg.μ*widths.^2
 		# Prior (eq. 21 from Scargle 2012)
 		fit_vec .-= 4 - log(73.53 * alg.p0 * ((K)^-0.478))
 		fit_vec[2:end] += best[1 : K-1]
