@@ -13,12 +13,19 @@
 struct DiscretizeBayesianBlocks <: DiscretizationAlgorithm
     p0::AbstractFloat
     μ::AbstractFloat
+    w0::Symbol
 end
+
 function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights::AbstractArray{M}) where {N<:AbstractFloat, M<:AbstractFloat}
 	unique_data = unique(data)
     unique_weights = [sum(weights[data .== x]) for x in unique_data]
 	unique_weights = unique_weights[sortperm(unique_data)]
 	sort!(unique_data)
+
+    # calculate prior bin width
+    nbins = get_nbins(alg.w0, data)
+    lo, hi = extrema(data)
+    w_prior = (hi-lo)/nbins
 
 	n = length(unique_data) # Number of observations
 
@@ -37,6 +44,7 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights
 	# 	nn_vec = convert(Array{Float64}, [length(findall((in)(v), data)) for v in unique_data])
 	# end
 
+    @info w_prior
 	count_vec = zeros(n)
 	best = zeros(n)
 	last = zeros(Int64,n)
@@ -46,7 +54,9 @@ function binedges(alg::DiscretizeBayesianBlocks, data::AbstractArray{N}, weights
 		count_vec[1 : K] .+= unique_weights[K]
 
 		# Fitness function (eq. 19 from Scargle 2012)
-		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths) - alg.μ*widths.^2
+        # now with a prior on the binwidths
+		# fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths) - alg.μ*count_vec[1:K].*(widths .- w_prior).^2
+		fit_vec = count_vec[1 : K] .* log.(count_vec[1 : K] ./ widths) + alg.μ*count_vec[1:K].*(log.(widths) - (2/w_prior).*widths)
 		# Prior (eq. 21 from Scargle 2012)
 		fit_vec .-= 4 - log(73.53 * alg.p0 * ((K)^-0.478))
 		fit_vec[2:end] += best[1 : K-1]
